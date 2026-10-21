@@ -43,7 +43,7 @@ VALIDACION
     con los escaneos de entrenamiento.
 
 USO
-    1) Revisar CARPETA_XYZ y SALIDA
+    1) Revisar CARPETA_XYZ (las salidas van a resultados/pinn_v2 del repo)
     2) python pinn_smcp.py   (reutiliza nubes_segmentadas.npz si ya existe)
 
 REQUIERE: numpy, scipy, pandas, openpyxl, torch
@@ -60,9 +60,10 @@ from scipy.optimize import least_squares
 from itertools import combinations, permutations
 
 # ---------------------------------------------------------------- CONFIGURACION
-CARPETA_XYZ = r'C:\Users\Maritza\Desktop\CENAM\PINNPINN'                   # <-- EDITAR
-SALIDA      = r'C:\Users\Maritza\Desktop\CENAM\PINNPINN\Resultados'   # <-- EDITAR
-CACHE       = os.path.join(SALIDA, 'nubes_segmentadas.npz')
+REPO        = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # raiz del repo
+CARPETA_XYZ = r'C:\Users\Maritza\Desktop\CENAM\PINNPINN'                   # <-- EDITAR (escaneos .xyz)
+SALIDA      = os.path.join(REPO, 'resultados', 'pinn_v2')
+CACHE       = os.path.join(REPO, 'resultados', 'esferas', 'nubes_segmentadas.npz')   # compartido con gp_smcp.py
 
 # referencia MMC
 REF_DIAM = {'A': 100.0071, 'B': 100.0166, 'C': 100.0033}
@@ -405,4 +406,132 @@ def main():
     # subconjuntos, centros iniciales y errores crudos (una sola vez)
     print('Ajustando esferas crudas...')
     grupos = {(e, s): pts[(id_esc == e) & (id_esf == s)] for e in range(nE) for s in range(3)}
-    centros_ini = {k:
+    centros_ini = {k: ajusta(v)[0] for k, v in grupos.items()}
+    E_crudo = np.array([mensurandos([grupos[(e, s)] for s in range(3)]) for e in range(nE)])
+
+    # k-fold por escaneo (mismos folds que v1)
+    rng = np.random.default_rng(SEMILLA)
+    orden = rng.permutation(nE)
+    folds = np.array_split(orden, K_FOLDS)
+    fold_de = np.empty(nE, dtype=int)
+    for k, test in enumerate(folds):
+        fold_de[test] = k + 1
+
+    # baseline: escala fija estimada en entrenamiento
+    E_esc = np.full_like(E_crudo, np.nan)
+    s_fold = []
+    for test in folds:
+        train = np.setdiff1d(orden, test)
+        s = escala_fija(E_crudo[train].mean(0))
+        s_fold.append(s)
+        for e in test:
+            E_esc[e] = mensurandos([grupos[(e, ss)] / s for ss in range(3)])
+
+    # diagnostico: posicion, cobertura y cercania a esferas de entrenamiento
+    filas = []
+    for k, test in enumerate(folds):
+        train = np.setdiff1d(orden, test)
+        cen_tr = np.array([centros_ini[(e, s)] for e in train for s in range(3)])
+        for e in test:
+            for s in range(3):
+                c = centros_ini[(e, s)]
+                filas.append({'archivo': nombres[e], 'fold': k + 1, 'esfera': ETIQ[s],
+                              'x (mm)': c[0], 'y (mm)': c[1], 'z (mm)': c[2],
+                              'rho': np.hypot(c[0], c[1]) / c[2],
+                              'n puntos': len(grupos[(e, s)]),
+                              'casquete (grados)': casquete(grupos[(e, s)], c),
+                              'dist. a esfera de entrenamiento (mm)':
+                                  np.linalg.norm(cen_tr - c, axis=1).min()})
+    diag = pd.DataFrame(filas)
+
+    nom = [f'D_{L}' for L in ETIQ] + [f'd_{ETIQ[i]}-{ETIQ[j]}'
+                                      for i, j in combinations(range(3), 2)]
+    resultados = {}
+
+    for nombre_cfg, cfg in CONFIGS:
+        t0 = time.time()
+        print('\n' + '#' * 78 + f'\n### CONFIGURACION: {nombre_cfg}  {cfg}\n' + '#' * 78)
+        E_mod = np.full_like(E_crudo, np.nan)
+        coefs = []
+
+        for k, test in enumerate(folds):
+            train = np.setdiff1d(orden, test)
+            print(f'--- Fold {k + 1}/{K_FOLDS}: {len(train)} entrenamiento, {len(test)} prueba')
+            modelo, a = entrena(pts, id_esc, id_esf, train, centros_ini, s_fold[k], **cfg)
+            coefs.append(a)
+
+            modelo = modelo.double().eval()
+            with torch.no_grad():
+                for e in test:
+                    corr = [modelo(torch.tensor(grupos[(e, ss)], dtype=torch.float64))[0]
+                            .numpy() for ss in range(3)]
+                    E_mod[e] = mensurandos(corr)
+            print(f'    prueba de este fold: escala fija {rms(E_esc[test], None):6.1f} um'
+                  f'   {nombre_cfg} {rms(E_mod[test], None):6.1f} um')
+
+        resultados[nombre_cfg] = E_mod
+
+        # ---- reporte de la configuracion
+        tabla = pd.DataFrame({'Mensurando': nom,
+                              'RMS crudo (um)': rms(E_crudo),
+                              'RMS escala fija (um)': rms(E_esc),
+                              f'RMS {nombre_cfg} (um)': rms(E_mod)})
+        tabla['Mejora vs escala fija (%)'] = (1 - tabla[f'RMS {nombre_cfg} (um)'] /
+                                              tabla['RMS escala fija (um)']) * 100
+        g = [rms(M, None) for M in (E_crudo, E_esc, E_mod)]
+        print('\n' + '=' * 78)
+        print(f'RESULTADO {nombre_cfg}  (k-fold por escaneo; prueba nunca vista al entrenar)')
+        print('=' * 78)
+        print(tabla.to_string(index=False, float_format=lambda v: f'{v:9.1f}'))
+        print(f'\nGLOBAL   crudo {g[0]:7.1f}   escala fija {g[1]:7.1f}   '
+              f'{nombre_cfg} {g[2]:7.1f}  um')
+        print(f'  mejora sobre la escala fija : {(1 - g[2] / g[1]) * 100:5.1f}%'
+              f'   <-- numero a reportar')
+        print(f'  mediana |error|: escala fija {np.median(np.abs(E_esc)):6.1f} um   '
+              f'{nombre_cfg} {np.median(np.abs(E_mod)):6.1f} um')
+        print(f'  tiempo: {(time.time() - t0) / 60:.1f} min')
+
+        hoja = lambda M: pd.DataFrame(M, columns=nom).assign(archivo=nombres, fold=fold_de)
+        dfc = pd.DataFrame(coefs, columns=[f'a{i}' for i in range(6)])
+        dfc.insert(0, 'fold', np.arange(1, K_FOLDS + 1))
+        dfc['escala fija'] = s_fold
+        destino = guarda_excel(os.path.join(SALIDA, f'resultados_pinn_smcp_{nombre_cfg}.xlsx'),
+                               {'Resumen': tabla, 'Crudo': hoja(E_crudo),
+                                'EscalaFija': hoja(E_esc), 'Modelo': hoja(E_mod),
+                                'Coeficientes': dfc, 'Diagnostico': diag})
+        np.savez(os.path.join(SALIDA, f'resultados_pinn_smcp_{nombre_cfg}.npz'),
+                 E_crudo=E_crudo, E_esc=E_esc, E_pinn=E_mod, nombres=nombres,
+                 coefs=np.array(coefs), folds=fold_de)
+        print(f'  guardado: {destino}')
+
+    # ---- comparacion final
+    cols = {'crudo': E_crudo, 'escala fija': E_esc, **resultados}
+    comp = pd.DataFrame({'Mensurando': nom + ['GLOBAL', 'Mediana |error|']})
+    for c, M in cols.items():
+        comp[c] = list(rms(M)) + [rms(M, None), np.median(np.abs(M))]
+    por_escaneo = pd.DataFrame({'archivo': nombres, 'fold': fold_de})
+    for c, M in cols.items():
+        por_escaneo[f'RMS {c} (um)'] = rms(M, 1)
+
+    print('\n' + '=' * 78)
+    print('COMPARACION FINAL  (RMS en um; k-fold por escaneo)')
+    print('=' * 78)
+    print(comp.to_string(index=False, float_format=lambda v: f'{v:9.1f}'))
+    g_esc = rms(E_esc, None)
+    for c, M in resultados.items():
+        print(f'  mejora de {c:>8s} sobre la escala fija: {(1 - rms(M, None) / g_esc) * 100:5.1f}%')
+
+    ultimo = list(resultados)[-1]
+    peor = por_escaneo.sort_values(f'RMS {ultimo} (um)', ascending=False).head(5)
+    print(f'\nEscaneos con mayor error ({ultimo}); revisa su hoja Diagnostico:')
+    print(peor.to_string(index=False, float_format=lambda v: f'{v:8.1f}'))
+
+    destino = guarda_excel(os.path.join(SALIDA, 'comparacion_smcp.xlsx'),
+                           {'Comparacion': comp, 'PorEscaneo': por_escaneo,
+                            'Diagnostico': diag})
+    print(f'\nGuardado: {destino}')
+    print(f'Tiempo total: {(time.time() - t_ini) / 60:.1f} min')
+
+
+if __name__ == '__main__':
+    main()

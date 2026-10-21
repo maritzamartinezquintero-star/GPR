@@ -28,7 +28,7 @@ import re
 import numpy as np
 
 # ---------------------------------------------------------------- CONFIGURACION
-CARPETA     = r'C:\Users\oicasio\Desktop\GPR\Resultado GPR'
+CARPETA     = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'resultados', 'gp')
 MODELO_NPZ  = os.path.join(CARPETA, 'modelo_gp_smcp.npz')
 MODELO_YML  = os.path.join(CARPETA, 'modelo_gp_smcp.yml')
 CALIBRACION = r'C:\Users\oicasio\Desktop\CMCP\YA2\calibration.yml'      # la de los 37 escaneos

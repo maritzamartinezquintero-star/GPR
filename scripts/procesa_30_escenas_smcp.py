@@ -19,8 +19,9 @@ from scipy.optimize import least_squares
 from itertools import combinations, permutations
 
 # ---------------------------------------------------------------- CONFIGURACION
-CARPETA = r'C:\Users\oicasio\Desktop\MedicionEsferas'   # <-- EDITAR
-SALIDA  = r'C:\Users\oicasio\Desktop\MedicionEsferas\Esferas limpias'   # <-- EDITAR
+REPO    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # raiz del repo
+CARPETA = r'C:\Users\oicasio\Desktop\MedicionEsferas'   # <-- EDITAR (escaneos .xyz)
+SALIDA  = os.path.join(REPO, 'resultados', 'esferas')
 
 R_NOM        = 50.0    # radio nominal (mm)
 TOL_RANSAC   = 1.0     # tolerancia de inlier en RANSAC (mm)

@@ -32,6 +32,8 @@ Compensar errores de sistemas de medición por coordenadas con modelos físicos 
 Remedición MMC de octubre 2026: diferencias 0–1.3 µm → despreciables, no requieren reentrenar.
 
 ## Pipeline Python (hecho)
+Estructura del repo: `scripts/` (código), `resultados/{esferas,pinn_v2,gp}/` (salidas, rutas relativas al repo), `archivo/pinn_v1/` (histórico). Solo `CARPETA_XYZ` (escaneos .xyz, fuera del repo) se edita a mano. Ver `README.md`.
+
 1. `procesa_30_escenas_smcp.py` — segmentación RANSAC, ajuste de esferas RANSAC + mínimos cuadrados con rechazo 2.5σ (desv. estándar, no MAD), etiquetado A/B/C, salida `resultados_30_escenas.xlsx`. Validado contra PolyWorks (±1 µm).
 2. `pinn_smcp.py` **v2** — PINN:
    - `p_corr = p + p·s(z,ρ) + MLP(p)·ESCALA_MLP`
@@ -63,10 +65,10 @@ Mejoran los 6 mensurandos y los 37 escaneos.
 ---
 
 ## GPR (oct 2026) — reemplaza al PINN como modelo de compensación
-- `Resultado GPR/gp_smcp.py`: física s(z,ρ) + GP (lineal + Matérn 5/2 ARD) observado vía diámetros/distancias. Mismos 37 escaneos, folds (SEMILLA=0) y escala fija que PINN v2.
+- `scripts/gp_smcp.py`: física s(z,ρ) + GP (lineal + Matérn 5/2 ARD) observado vía diámetros/distancias. Mismos 37 escaneos, folds (SEMILLA=0) y escala fija que PINN v2.
 - **55.4 µm RMS, 85.3 % vs escala fija** (PINN v2: 97.9 µm, 74.1 %). Gana en 31/37 escaneos; ventaja en distancias (3–4×). D_B ≈ 106 µm en ambos (cobertura de datos, no del modelo). 5 de 6 escaneos donde gana el PINN son de la 2.ª sesión (11:4x–11:5x).
 - σ predicha ~1.4× corta (cobertura 55 % / 87 %).
-- PINN v2 de referencia: `resultados_pinn_smcp_pinn 1/` (`pinn_smcp.py` v2 + `.npz`). Los `.npz` de `Escaneos-PINN/` son de la v1 (~222 µm), no usarlos.
+- PINN v2 de referencia: `scripts/pinn_smcp.py` + `resultados/pinn_v2/`. Lo de `archivo/pinn_v1/` es la v1 (~222 µm), no usarlo.
 - Escaneos de octubre: **descartados**, se trabaja solo con los 37 de septiembre.
 
 ## Integración en SMCP.exe (hecha, oct 2026)

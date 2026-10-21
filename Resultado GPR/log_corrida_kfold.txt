@@ -1,0 +1,94 @@
+
+37 escaneos, 1,771,239 puntos (15,957 por esfera en promedio)
+Ajustando esferas crudas...
+
+--- Fold 1/5: 29 entrenamiento, 8 prueba
+    fisica a0..a5: [-8.555628e-03 -2.743722e-04 -1.075254e-04  1.929051e-02 -1.136486e-01 -5.597292e-03]
+    gp_lineal: s_lin 2062 ppm  s_D 233 um  s_L 222 um  (4 s)
+    gp       : s_lin 2133 ppm  l = (152, 241, 300) mm  s_f 469 um  s_D 16 um  s_L 5 um  (243 s)
+    prueba (RMS um): escala fija  445.6   fisica  339.7   gp_lineal  312.6   gp   64.9   [4.6 min]
+
+--- Fold 2/5: 29 entrenamiento, 8 prueba
+    fisica a0..a5: [-8.704304e-03 -4.067163e-04 -1.364594e-05  1.454564e-02 -3.989301e-02 -2.994403e-03]
+    gp_lineal: s_lin 1159 ppm  s_D 141 um  s_L 281 um  (3 s)
+    gp       : s_lin 1613 ppm  l = (228, 259, 464) mm  s_f 705 um  s_D 22 um  s_L 6 um  (243 s)
+    prueba (RMS um): escala fija  385.5   fisica  314.5   gp_lineal  262.4   gp   44.3   [4.6 min]
+
+--- Fold 3/5: 30 entrenamiento, 7 prueba
+    fisica a0..a5: [-8.705563e-03 -3.510370e-04 -6.377580e-05  1.297188e-02 -4.179006e-02 -5.429998e-03]
+    gp_lineal: s_lin 1844 ppm  s_D 188 um  s_L 245 um  (3 s)
+    gp       : s_lin 1795 ppm  l = (157, 192, 402) mm  s_f 484 um  s_D 19 um  s_L 5 um  (246 s)
+    prueba (RMS um): escala fija  366.2   fisica  256.7   gp_lineal  183.5   gp   40.8   [4.8 min]
+
+--- Fold 4/5: 30 entrenamiento, 7 prueba
+    fisica a0..a5: [-8.774460e-03 -3.947958e-04 -6.064982e-05  1.237717e-02 -3.518063e-02 -3.933834e-03]
+    gp_lineal: s_lin 1843 ppm  s_D 187 um  s_L 237 um  (3 s)
+    gp       : s_lin 1891 ppm  l = (151, 185, 357) mm  s_f 415 um  s_D 17 um  s_L 7 um  (266 s)
+    prueba (RMS um): escala fija  346.0   fisica  278.6   gp_lineal  218.2   gp   34.5   [5.1 min]
+
+--- Fold 5/5: 30 entrenamiento, 7 prueba
+    fisica a0..a5: [-8.598341e-03 -3.812163e-04 -7.481782e-05  1.410348e-02 -4.736320e-02 -4.200233e-03]
+    gp_lineal: s_lin 1746 ppm  s_D 192 um  s_L 257 um  (3 s)
+    gp       : s_lin 922 ppm  l = (240, 376, 496) mm  s_f 816 um  s_D 23 um  s_L 8 um  (204 s)
+    prueba (RMS um): escala fija  323.8   fisica  248.0   gp_lineal  192.1   gp   79.5   [4.0 min]
+
+==============================================================================
+COMPARACION  (RMS en um; k-fold por escaneo; prueba nunca vista al entrenar)
+==============================================================================
+     Mensurando     crudo  escala fija    fisica  gp_lineal        gp
+            D_A     771.4        110.8     122.1       84.2      42.7
+            D_B     574.3        324.4     191.0      188.5     106.5
+            D_C     709.2        141.1     200.0      264.2      45.5
+          d_A-B    2258.4        520.0     307.5      167.2      35.5
+          d_A-C    2020.9        441.7     230.6      186.8      22.8
+          d_B-C    2626.2        504.6     521.3      418.3      37.3
+         GLOBAL    1708.3        378.0     291.8      241.6      55.4
+Mediana |error|    1301.6        251.8     158.9      135.9      21.0
+    P95 |error|    2812.2        733.3     713.7      485.7      88.1
+  fisica    : mejora sobre la escala fija  22.8%   (por mensurando: -10, 41, -42, 41, 48, -3 %)
+  gp_lineal : mejora sobre la escala fija  36.1%   (por mensurando: 24, 42, -87, 68, 58, 17 %)
+  gp        : mejora sobre la escala fija  85.3%   (por mensurando: 62, 67, 68, 93, 95, 93 %)
+
+INCERTIDUMBRE PREDICHA (gp_lineal)
+     Grupo  RMS error (um)  RMS sigma predicha (um)  RMS(z) [ideal 1]  % dentro de 1 sigma [ideal 68]  % dentro de 2 sigma [ideal 95]
+ Diametros           193.6                    192.2               1.0                            65.8                            95.5
+Distancias           281.6                    255.2               1.1                            72.1                            93.7
+    Global           241.6                    225.9               1.1                            68.9                            94.6
+  error real (reajuste con rechazo 2.5 sigma) vs error predicho por el GP: diferencia max 157.9 um, RMS 17.0 um
+
+INCERTIDUMBRE PREDICHA (gp)
+     Grupo  RMS error (um)  RMS sigma predicha (um)  RMS(z) [ideal 1]  % dentro de 1 sigma [ideal 68]  % dentro de 2 sigma [ideal 95]
+ Diametros            71.3                     40.8               1.5                            54.1                            86.5
+Distancias            32.5                     33.0               1.3                            56.8                            88.3
+    Global            55.4                     37.1               1.4                            55.4                            87.4
+  error real (reajuste con rechazo 2.5 sigma) vs error predicho por el GP: diferencia max 43.5 um, RMS 16.5 um
+
+POR FOLD
+ fold  escaneos de prueba  RMS escala fija (um)  RMS fisica (um)  RMS gp_lineal (um)  RMS gp (um)  Mejora gp vs escala fija (%)
+    1                   8                 445.6            339.7               312.6         64.9                          85.4
+    2                   8                 385.5            314.5               262.4         44.3                          88.5
+    3                   7                 366.2            256.7               183.5         40.8                          88.9
+    4                   7                 346.0            278.6               218.2         34.5                          90.0
+    5                   7                 323.8            248.0               192.1         79.5                          75.5
+
+HIPERPARAMETROS POR FOLD
+ fold    config  s_lin (ppm)  s_f (um)  l_x (mm)  l_y (mm)  l_z (mm)  s_D (um)  s_L (um)  celdas  observaciones  -log ML
+    1 gp_lineal       2061.5       NaN       NaN       NaN       NaN     233.1     221.8    4588            174      0.0
+    1        gp       2132.7     468.7     152.4     241.1     300.3      15.8       4.7    4588            174   -282.4
+    2 gp_lineal       1158.9       NaN       NaN       NaN       NaN     141.4     280.9    4592            174    -26.1
+    2        gp       1612.9     704.9     227.7     258.6     463.5      21.9       6.1    4592            174   -279.8
+    3 gp_lineal       1844.2       NaN       NaN       NaN       NaN     188.4     244.7    4700            180    -11.2
+    3        gp       1794.6     484.0     156.9     192.2     401.6      19.3       5.2    4700            180   -284.1
+    4 gp_lineal       1842.7       NaN       NaN       NaN       NaN     187.3     237.2    4739            180    -14.4
+    4        gp       1891.5     415.0     151.0     184.9     356.6      17.4       7.0    4739            180   -282.9
+    5 gp_lineal       1746.1       NaN       NaN       NaN       NaN     191.7     256.6    4734            180     -5.9
+    5        gp        921.5     815.8     239.7     376.4     496.2      23.3       7.5    4734            180   -305.1
+
+Guardado: /home/claude/gp/run2/resultados_gp_smcp.xlsx
+
+Modelo final con todos los escaneos...
+  a0..a5: [-8.677504e-03 -3.617544e-04 -6.210131e-05  1.416526e-02 -5.428994e-02 -4.628543e-03]
+  s_lin 1984 ppm   s_f 458 um   l = (154, 204, 352) mm   s_D 18 um   s_L 6 um
+  guardado: /home/claude/gp/run2/modelo_gp_smcp.npz / .mat  (5838 puntos de soporte)
+
+Tiempo total: 29.6 min

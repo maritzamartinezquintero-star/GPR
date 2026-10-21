@@ -1,0 +1,14 @@
+# Escaneos crudos SMCP (~14 GB: imágenes cam_*.png y nubes .xyz)
+2026-*/
+*.xyz
+*.zip
+
+# Nubes segmentadas (18 MB, regenerables con procesa_30_escenas_smcp.py)
+nubes_segmentadas.npz
+
+# Python
+__pycache__/
+*.pyc
+
+# Office temporales
+~$*

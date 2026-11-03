@@ -79,6 +79,27 @@ Mejoran los 6 mensurandos y los 37 escaneos.
 - Validado: C++ vs Python diferencia máx 5e-6 µm (`valida_cpp_vs_python.py`); ~1 s por 108k puntos.
 - Puntos fuera del volumen de entrenamiento (z 687–1021 mm) se corrigen igual (extrapolación) y se cuentan en el mensaje.
 
+## Versión integrada SMCP + GP (nov 2026)
+Tres versiones separadas; las dos primeras no se tocan:
+
+| Versión | Dónde |
+|---|---|
+| José Luis (reestructurada, CMake, editor de nubes, IA vía WSL) | `github.com/JoseLuis-AL/SMCP` |
+| Maritza con GP (`src_v2`) | `C:\Users\oicasio\Desktop\CMCP\SMCP-CPP` |
+| **Integrada** | `github.com/maritzamartinezquintero-star/SMCP---GP` (privado), clon en `Desktop\SMCP---GP` |
+
+- Base de José Luis + `src/core/GPCompensation.*`, llamada en `Application::ReconstructModel(Dump)`, menú Calibration, sufijo `_gp` al guardar y `pointcloud.Clear()` al inicio de la reconstrucción. Config: `Compensation/GpFile`, `Compensation/GpEnabled`.
+- Compilar: `.\scripts\bootstrap.ps1 -OpenCV "$env:USERPROFILE\Desktop\CMCP\opencv\build"` y `.\scripts\build.ps1 -Config Release`. Ejecutable: `build\ninja-release\bin\SMCP.exe`. `cmake`/`ctest` están dentro de VS, no en el PATH.
+- El PATH de esta PC apunta a Qt `msvc2017` (x86); `windeployqt` copiaba DLL de 32 bits (`0xC000007B`). Corregido en `CMakeLists.txt`.
+- Validado (nov 2026, escaneo `09.57.19.561`, 107,686 puntos): C++ vs Python 1.1e-9 µm en `ctest`; *Compensate .xyz* 5e-6 µm e idéntico a `src_v2`; *Reconstruct* desde `cam_*.png` máx. 0.154 µm vs Python (coherente con `float32`). Esto valida la implementación, no la exactitud contra MMC.
+- Sin probar: desactivar con la casilla *Apply GP compensation on reconstruction*.
+- Su ajuste de esferas (RANSAC + mínimos cuadrados algebraicos, sin rechazo 2.5σ) es distinto al del pipeline Python: no usarlo para validar el GP. Aplicar denoise IA solo después del GP.
+
+## Datos en `MedicionEsferas` (cuidado)
+- 38 carpetas de captura, 37 en el modelo. `2026-sep.-15_10.20.07.745` tiene imágenes pero no `.xyz` y no se usó; motivo sin confirmar.
+- `2026-sep.-15_09.57.19.561_gp.xyz` está junto a los originales, y `procesa_30_escenas_smcp.py`, `pinn_smcp.py` y `gp_smcp.py` leen `*.xyz` sin filtrarlo. **Antes de regenerar el caché o reprocesar, sacar los `_gp.xyz` de la carpeta**: si no, un escaneo ya compensado entra como dato.
+- Caché: los scripts buscan `GPR\resultados\esferas\nubes_segmentadas.npz`, pero sigue en `MedicionEsferas\Esferas limpias\`. Copiarlo para no regenerarlo.
+
 ---
 
 ## Otros frentes (referencia)

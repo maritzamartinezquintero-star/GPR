@@ -68,7 +68,7 @@ CONFIGURACIONES (todas en una sola corrida)
     gp          fisica + GP completo (lineal + Matern)
 
 USO
-    1) Revisar CARPETA_XYZ, SALIDA y PINN_NPZ
+    1) Revisar CARPETA_XYZ (las salidas van a resultados/gp del repo)
     2) python gp_smcp.py          (reutiliza nubes_segmentadas.npz; ~30 min)
     Si encuentra PINN_NPZ (resultados_pinn_smcp_pinn.npz de la version 2 del PINN),
     agrega el PINN a la comparacion escaneo por escaneo.
@@ -93,10 +93,11 @@ from scipy.io import savemat
 from itertools import combinations, permutations
 
 # ---------------------------------------------------------------- CONFIGURACION
-CARPETA_XYZ = r'C:\Users\oicasio\Desktop\MedicionEsferas'                   # <-- EDITAR
-SALIDA      = r'C:\Users\oicasio\Desktop\MedicionEsferas\Esferas limpias'   # <-- EDITAR
-CACHE       = os.path.join(SALIDA, 'nubes_segmentadas.npz')
-PINN_NPZ    = os.path.join(SALIDA, 'resultados_pinn_smcp_pinn.npz')   # opcional
+REPO        = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # raiz del repo
+CARPETA_XYZ = r'C:\Users\oicasio\Desktop\MedicionEsferas'                   # <-- EDITAR (escaneos .xyz)
+SALIDA      = os.path.join(REPO, 'resultados', 'gp')
+CACHE       = os.path.join(REPO, 'resultados', 'esferas', 'nubes_segmentadas.npz')   # compartido con pinn_smcp.py
+PINN_NPZ    = os.path.join(REPO, 'resultados', 'pinn_v2', 'resultados_pinn_smcp_pinn.npz')   # opcional (PINN v2)
 
 # referencia MMC (la misma con la que se reportaron los 97.9 um del PINN)
 REF_DIAM = {'A': 100.0071, 'B': 100.0166, 'C': 100.0033}

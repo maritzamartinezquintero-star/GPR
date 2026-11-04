@@ -32,6 +32,8 @@ Compensar errores de sistemas de medición por coordenadas con modelos físicos 
 Remedición MMC de octubre 2026: diferencias 0–1.3 µm → despreciables, no requieren reentrenar.
 
 ## Pipeline Python (hecho)
+Estructura del repo: `scripts/` (código), `resultados/{esferas,pinn_v2,gp}/` (salidas, rutas relativas al repo), `archivo/pinn_v1/` (histórico). Solo `CARPETA_XYZ` (escaneos .xyz, fuera del repo) se edita a mano. Ver `README.md`.
+
 1. `procesa_30_escenas_smcp.py` — segmentación RANSAC, ajuste de esferas RANSAC + mínimos cuadrados con rechazo 2.5σ (desv. estándar, no MAD), etiquetado A/B/C, salida `resultados_30_escenas.xlsx`. Validado contra PolyWorks (±1 µm).
 2. `pinn_smcp.py` **v2** — PINN:
    - `p_corr = p + p·s(z,ρ) + MLP(p)·ESCALA_MLP`
@@ -63,10 +65,10 @@ Mejoran los 6 mensurandos y los 37 escaneos.
 ---
 
 ## GPR (oct 2026) — reemplaza al PINN como modelo de compensación
-- `Resultado GPR/gp_smcp.py`: física s(z,ρ) + GP (lineal + Matérn 5/2 ARD) observado vía diámetros/distancias. Mismos 37 escaneos, folds (SEMILLA=0) y escala fija que PINN v2.
+- `scripts/gp_smcp.py`: física s(z,ρ) + GP (lineal + Matérn 5/2 ARD) observado vía diámetros/distancias. Mismos 37 escaneos, folds (SEMILLA=0) y escala fija que PINN v2.
 - **55.4 µm RMS, 85.3 % vs escala fija** (PINN v2: 97.9 µm, 74.1 %). Gana en 31/37 escaneos; ventaja en distancias (3–4×). D_B ≈ 106 µm en ambos (cobertura de datos, no del modelo). 5 de 6 escaneos donde gana el PINN son de la 2.ª sesión (11:4x–11:5x).
 - σ predicha ~1.4× corta (cobertura 55 % / 87 %).
-- PINN v2 de referencia: `resultados_pinn_smcp_pinn 1/` (`pinn_smcp.py` v2 + `.npz`). Los `.npz` de `Escaneos-PINN/` son de la v1 (~222 µm), no usarlos.
+- PINN v2 de referencia: `scripts/pinn_smcp.py` + `resultados/pinn_v2/`. Lo de `archivo/pinn_v1/` es la v1 (~222 µm), no usarlo.
 - Escaneos de octubre: **descartados**, se trabaja solo con los 37 de septiembre.
 
 ## Integración en SMCP.exe (hecha, oct 2026)
@@ -76,6 +78,27 @@ Mejoran los 6 mensurandos y los 37 escaneos.
 - Menú Calibration: *Load GP compensation model…*, *Apply GP compensation on reconstruction*, *Compensate existing .xyz file…*. Config: `compensation/gp_file`, `compensation/gp_enabled`.
 - Validado: C++ vs Python diferencia máx 5e-6 µm (`valida_cpp_vs_python.py`); ~1 s por 108k puntos.
 - Puntos fuera del volumen de entrenamiento (z 687–1021 mm) se corrigen igual (extrapolación) y se cuentan en el mensaje.
+
+## Versión integrada SMCP + GP (nov 2026)
+Tres versiones separadas; las dos primeras no se tocan:
+
+| Versión | Dónde |
+|---|---|
+| José Luis (reestructurada, CMake, editor de nubes, IA vía WSL) | `github.com/JoseLuis-AL/SMCP` |
+| Maritza con GP (`src_v2`) | `C:\Users\oicasio\Desktop\CMCP\SMCP-CPP` |
+| **Integrada** | `github.com/maritzamartinezquintero-star/SMCP---GP` (privado), clon en `Desktop\SMCP---GP` |
+
+- Base de José Luis + `src/core/GPCompensation.*`, llamada en `Application::ReconstructModel(Dump)`, menú Calibration, sufijo `_gp` al guardar y `pointcloud.Clear()` al inicio de la reconstrucción. Config: `Compensation/GpFile`, `Compensation/GpEnabled`.
+- Compilar: `.\scripts\bootstrap.ps1 -OpenCV "$env:USERPROFILE\Desktop\CMCP\opencv\build"` y `.\scripts\build.ps1 -Config Release`. Ejecutable: `build\ninja-release\bin\SMCP.exe`. `cmake`/`ctest` están dentro de VS, no en el PATH.
+- El PATH de esta PC apunta a Qt `msvc2017` (x86); `windeployqt` copiaba DLL de 32 bits (`0xC000007B`). Corregido en `CMakeLists.txt`.
+- Validado (nov 2026, escaneo `09.57.19.561`, 107,686 puntos): C++ vs Python 1.1e-9 µm en `ctest`; *Compensate .xyz* 5e-6 µm e idéntico a `src_v2`; *Reconstruct* desde `cam_*.png` máx. 0.154 µm vs Python (coherente con `float32`). Esto valida la implementación, no la exactitud contra MMC.
+- Sin probar: desactivar con la casilla *Apply GP compensation on reconstruction*.
+- Su ajuste de esferas (RANSAC + mínimos cuadrados algebraicos, sin rechazo 2.5σ) es distinto al del pipeline Python: no usarlo para validar el GP. Aplicar denoise IA solo después del GP.
+
+## Datos en `MedicionEsferas` (cuidado)
+- 38 carpetas de captura, 37 en el modelo. `2026-sep.-15_10.20.07.745` tiene imágenes pero no `.xyz` y no se usó; motivo sin confirmar.
+- `2026-sep.-15_09.57.19.561_gp.xyz` está junto a los originales, y `procesa_30_escenas_smcp.py`, `pinn_smcp.py` y `gp_smcp.py` leen `*.xyz` sin filtrarlo. **Antes de regenerar el caché o reprocesar, sacar los `_gp.xyz` de la carpeta**: si no, un escaneo ya compensado entra como dato.
+- Caché: los scripts buscan `GPR\resultados\esferas\nubes_segmentadas.npz`, pero sigue en `MedicionEsferas\Esferas limpias\`. Copiarlo para no regenerarlo.
 
 ---
 
